@@ -4,11 +4,36 @@
 	import { resampleAudio } from '$lib/util-functions/resampleTo16kHz';
 	import { downloadBlob } from '$lib/util-functions/downloadBlob';
 	import { reencodeVideo } from '$lib/util-functions/reencodeVideo';
+	import { onMount, onDestroy } from 'svelte';
+	import { sleep } from '$lib/util-functions/sleep';
 
 	let isRecording = $state(false);
 	let captureStream: MediaStream | null = null;
 	let mediaRecorder: MediaRecorder | null = null;
 	let chunks: Blob[] = [];
+	let worker: Worker;
+
+	onMount(async () => {
+		// Initiate the web worker when the component in mounted
+		console.log('initializeing worker...');
+		const MyWorker = await import('$lib/worker.js?worker');
+		// And initiate the worker
+		worker = new MyWorker.default();
+
+		worker.onmessage = function (e) {
+			// Let’s first get the status and the message from the event’s data
+			const { status, message } = e.data;
+			console.log({ e });
+		};
+		console.log('worker initialized.');
+		await sleep(3000);
+		worker.postMessage('Hello from main thread');
+		console.log('message posted to worker.');
+	});
+	onDestroy(() => {
+		// Terminate any web worker task that might be running when the component is destroyed.
+		worker?.terminate();
+	});
 
 	async function toggleRecording() {
 		isRecording = !isRecording;
@@ -95,7 +120,7 @@
 		}
 
 		// Sleep for 1 secs to ensure data stream is finalized
-		await new Promise((resolve) => setTimeout(resolve, 1000));
+		await sleep(1000);
 
 		let blob = new Blob(chunks, { type: 'video/webm' });
 
@@ -103,7 +128,6 @@
 		// Download Video
 		const videoblob = await reencodeVideo(blob);
 		downloadBlob(videoblob, 'recording.webm');
-
 
 		// Resample audio to 16kHz for ASR
 		// Download audio
