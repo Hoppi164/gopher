@@ -1,6 +1,6 @@
 <script lang="ts">
 	import favicon from '$lib/assets/favicon.svg';
-	import "@picocss/pico"
+	import '@picocss/pico';
 	let { children } = $props();
 </script>
 
@@ -9,7 +9,6 @@
 </svelte:head>
 
 {@render children()}
-
 
 <style>
 	:global(.text-center) {
@@ -20,6 +19,4 @@
 		justify-content: center;
 		align-items: center;
 	}
-	
-	
 </style>
